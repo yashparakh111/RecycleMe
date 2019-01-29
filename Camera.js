@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, Button, TouchableOpacity, Alert, Icon, Image} from 'react-native';
-import { Camera, Permissions} from 'expo';
+import { Camera, Permissions, FileSystem} from 'expo';
 
 //<Camera ref={ref => { this.camera = ref; }} />
 
@@ -15,11 +15,24 @@ export default class CameraScreen extends React.Component {
 		this.setState({ hasCameraPermission: status === 'granted' });
 	}
 
-	/*snap = async () => {
+	getRatios = async () => {
+		const ratios = await this.camera.getSupportedRatios();
+		return ratios;
+	};
+
+	takePicture = () => {
 		if (this.camera) {
-			let photo = await this.camera.takePictureAsync();
+			this.camera.takePictureAsync({ onPictureSaved: this.onPictureSaved });
 		}
-	};*/
+	};
+
+	onPictureSaved = async photo => {
+		await FileSystem.moveAsync({
+			from: photo.uri,
+			to: '${FileSystem.documentDirectory}photos/${Date.now()}.jpg',
+		});
+		this.setState({ newPhotos: true });
+	}
 
 	render() {
 		const { hasCameraPermission } = this.state;
@@ -42,13 +55,7 @@ export default class CameraScreen extends React.Component {
 					flex: 0.1,
 						alignItems: 'center',
 				}}
-				onPress={() => {
-					this.setState({
-						type: this.state.type === Camera.Constants.Type.back
-						? Camera.Constants.Type.front
-						: Camera.Constants.Type.back,
-					});
-				}}>
+				onPress={this.takePicture}>
 				<Image
 				style={{backgroundColor: 'transparent', width:90, height:90}}
 				source={require('./assets/camera_capture_button.png')}
